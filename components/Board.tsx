@@ -62,6 +62,7 @@ export default function Board() {
   const [status, setStatus] = useState<Status>(initialStatus('live'));
   const [popup, setPopup] = useState<'info' | 'mode' | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  const [refreshKey, setRefreshKey] = useState(0);
   const actionsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -128,7 +129,7 @@ export default function Board() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [mode]);
+  }, [mode, refreshKey]);
 
   const changeMode = (next: Mode) => {
     if (next === mode) return;
@@ -155,6 +156,15 @@ export default function Board() {
         <button className="tab" aria-pressed={!dep} onClick={() => setView('arrival')}>Arrivals</button>
 
         <div className="title-actions" ref={actionsRef}>
+          <button
+            className="icon-btn"
+            aria-label="Refresh data"
+            onClick={() => { setNow(Date.now()); setRefreshKey((k) => k + 1); }}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
+            </svg>
+          </button>
           <div className="pop">
             <button
               className={`icon-btn info-btn ${status.kind}`}
@@ -180,6 +190,10 @@ export default function Board() {
                 <p className="note">
                   Flights from the last 10 minutes and upcoming ones from AeroDataBox, soonest first. Times are the
                   latest estimates and the schedule is refreshed about once an hour.
+                </p>
+                <p className="credit">
+                  © {new Date().getFullYear()} Created, built and designed by Luis Hermosilla (
+                  <a href="https://luigiht.com" target="_blank" rel="noopener noreferrer">luigiht.com</a>)
                 </p>
               </div>
             )}
