@@ -2,28 +2,28 @@
 
 A split-flap style departures and arrivals board for London City Airport (LCY/EGLC), built with Next.js.
 
-Flight data comes from [AeroDataBox](https://aerodatabox.com): the board lists flights that have actually departed from or landed at London City, with destination or origin, airline and flight number.
+Flight data comes from [AeroDataBox](https://aerodatabox.com): the board lists current and upcoming flights at London City, soonest first, with destination or origin, airline and flight number.
 
 ## Features
 
 - **Departures / Arrivals board** with a flip-tile look that scales with the viewport.
-- **Live mode** shows the last 12 hours of real LCY movements, newest first, using actual runway or gate times where available.
-- **Demo mode** generates synthetic LCY traffic at 10× speed, useful without an API key or when the airport is quiet (LCY is closed at night and from Saturday afternoon to Sunday afternoon).
+- **Live mode** shows LCY flights from 10 minutes ago up to about 11 hours ahead, soonest first, using the latest estimated (or actual) times.
+- **Demo mode** runs a synthetic LCY schedule at 10× speed, useful without an API key.
 - **Responsive**: on small screens each movement becomes a compact card.
 
 ## How it works
 
 | Path | Purpose |
 | --- | --- |
-| `app/api/flights/route.ts` | Server route that calls the AeroDataBox airport departures/arrivals endpoint for EGLC, keeps only flights that have happened, and caches the upstream response for an hour. The API key never reaches the browser. |
+| `app/api/flights/route.ts` | Server route that calls the AeroDataBox airport departures/arrivals endpoint for EGLC, keeps current and upcoming flights sorted by time, and caches the upstream response for an hour. The API key never reaches the browser. |
 | `lib/simulator.ts` | Demo traffic generator. |
 | `components/Board.tsx` | The board UI and polling loop. |
 
 ### API usage
 
-AeroDataBox's free plan has a small monthly quota, so the server caches the AeroDataBox response for **one hour** in the Next.js Data Cache (shared across visitors and Vercel instances). That is roughly 24 calls a day, or about 750 a month, regardless of traffic. The browser polls the app every 5 minutes, which is free. To change the refresh rate, edit `CACHE_SECONDS` in `app/api/flights/route.ts`, and check how many units each call costs on your plan.
+AeroDataBox's free plan has a small monthly quota, so the server caches the AeroDataBox response for **one hour** in the Next.js Data Cache (shared across visitors and Vercel instances). That is roughly 24 calls a day, or about 750 a month, regardless of traffic. The browser polls the app every minute, which is free. To change the refresh rate, edit `CACHE_SECONDS` in `app/api/flights/route.ts`, and check how many units each call costs on your plan.
 
-Because of the cache, a flight can take up to an hour to appear on the board.
+Because of the cache, delays and time changes can take up to an hour to show on the board. Flights drop off 10 minutes after their time, without waiting for a refresh.
 
 ## Getting started
 

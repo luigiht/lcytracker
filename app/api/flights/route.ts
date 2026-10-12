@@ -4,9 +4,9 @@ import type { FlightsResponse, Movement, MovementType } from '@/lib/types';
 // One upstream call per hour keeps a free AeroDataBox quota going for the month.
 const CACHE_SECONDS = 3600;
 const HOST = 'aerodatabox.p.rapidapi.com';
-// The last 12 hours of movements (the maximum window per call).
+// The past hour (for delayed flights) plus the next 11 hours; 12 hours is the maximum window per call.
 const FIDS_URL = `https://${HOST}/flights/airports/icao/EGLC?` + new URLSearchParams({
-  offsetMinutes: '-720',
+  offsetMinutes: '-60',
   durationMinutes: '720',
   withLeg: 'false',
   direction: 'Both',
@@ -20,7 +20,6 @@ const FIDS_URL = `https://${HOST}/flights/airports/icao/EGLC?` + new URLSearchPa
 interface AdbTime { utc?: string }
 interface AdbFlight {
   number: string;
-  status: string;
   airline?: { name?: string };
   movement?: {
     airport?: { name?: string; shortName?: string; municipalityName?: string; iata?: string };
@@ -34,18 +33,14 @@ const plain = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 // AeroDataBox returns UTC times like "2026-10-12 14:15Z"
 const parseUtc = (s?: string) => (s ? Date.parse(s.replace(' ', 'T')) : NaN);
 
-// Statuses showing the movement has happened; 'Unknown' falls back to the time having passed.
-const DONE: Record<MovementType, string[]> = {
-  departure: ['Departed', 'EnRoute', 'Approaching', 'Arrived', 'Diverted'],
-  arrival: ['Arrived'],
-};
+// Flights that moved within this window still count as current.
+const CURRENT_MS = 10 * 60000;
 
 function toMovement(f: AdbFlight, type: MovementType, now: number): Movement | null {
   const m = f.movement;
   if (!m) return null;
   const t = parseUtc(m.runwayTime?.utc ?? m.revisedTime?.utc ?? m.scheduledTime?.utc);
-  if (Number.isNaN(t) || t > now) return null;
-  if (!DONE[type].includes(f.status) && f.status !== 'Unknown') return null;
+  if (Number.isNaN(t) || t < now - CURRENT_MS) return null;
   const a = m.airport ?? {};
   const place = plain(a.municipalityName || a.shortName || a.name || a.iata || '');
   return {
@@ -81,7 +76,7 @@ export async function GET() {
       ...(j.arrivals ?? []).map((f) => toMovement(f, 'arrival', now)),
     ]
       .filter((m): m is Movement => !!m)
-      .sort((a, b) => b.t - a.t);
+      .sort((a, b) => a.t - b.t);
 
     const date = Date.parse(r.headers.get('date') ?? '');
     const body: FlightsResponse = { updated: Number.isNaN(date) ? null : date, movements };

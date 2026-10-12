@@ -2,6 +2,8 @@ import type { Movement, MovementType } from './types';
 
 export const SIM_STEP_MS = 2000;
 const SIM_DT = 20000;
+const CURRENT_MS = 10 * 60000;
+const HORIZON_MS = 3 * 3600000;
 
 const pick = <T,>(arr: readonly T[]): T => arr[Math.floor(Math.random() * arr.length)];
 const digits = (n: number) =>
@@ -26,23 +28,20 @@ function movement(t: number): Movement {
   return { id: hex6(), t, type, flight: `${f.iata} ${digits(f.n)}`, airline: f.name, place: pick(f.to) };
 }
 
-/** Synthetic LCY traffic at 10x speed. */
+/** Synthetic LCY schedule running at 10x speed. */
 export class Simulator {
   private clock = Date.now();
+  private flights: Movement[] = [];
+  private last = this.clock - CURRENT_MS;
 
-  /** About half an hour of recent history so the board isn't empty. */
-  seed(): Movement[] {
-    const out: Movement[] = [];
-    let t = this.clock - 60000;
-    for (let i = 0; i < 16; i++) {
-      t -= (60 + Math.random() * 140) * 1000;
-      out.push(movement(t));
+  /** Current and upcoming flights, soonest first. */
+  step(advance = true): Movement[] {
+    if (advance) this.clock += SIM_DT;
+    this.flights = this.flights.filter((f) => f.t >= this.clock - CURRENT_MS);
+    while (this.last < this.clock + HORIZON_MS) {
+      this.last += (2 + Math.random() * 6) * 60000;
+      this.flights.push(movement(Math.round(this.last / 300000) * 300000));
     }
-    return out;
-  }
-
-  step(): Movement | null {
-    this.clock += SIM_DT;
-    return Math.random() < 0.3 ? movement(this.clock) : null;
+    return this.flights;
   }
 }
