@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import type { FlightsResponse, Movement, MovementType } from '@/lib/types';
+import { CURRENT_WINDOW_MS, type FlightsResponse, type Movement, type MovementType } from '@/lib/types';
 
 // One upstream call per hour keeps a free AeroDataBox quota going for the month.
 const CACHE_SECONDS = 3600;
@@ -33,14 +33,11 @@ const plain = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 // AeroDataBox returns UTC times like "2026-10-12 14:15Z"
 const parseUtc = (s?: string) => (s ? Date.parse(s.replace(' ', 'T')) : NaN);
 
-// Flights that moved within this window still count as current.
-const CURRENT_MS = 10 * 60000;
-
 function toMovement(f: AdbFlight, type: MovementType, now: number): Movement | null {
   const m = f.movement;
   if (!m) return null;
   const t = parseUtc(m.runwayTime?.utc ?? m.revisedTime?.utc ?? m.scheduledTime?.utc);
-  if (Number.isNaN(t) || t < now - CURRENT_MS) return null;
+  if (Number.isNaN(t) || t < now - CURRENT_WINDOW_MS) return null;
   const a = m.airport ?? {};
   const place = plain(a.municipalityName || a.shortName || a.name || a.iata || '');
   return {

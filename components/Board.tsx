@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { SIM_STEP_MS, Simulator } from '@/lib/simulator';
-import type { FlightsResponse, Movement, MovementType } from '@/lib/types';
+import { CURRENT_WINDOW_MS, type FlightsResponse, type Movement, type MovementType } from '@/lib/types';
 
 const ROWS = 9;
 // The server caches AeroDataBox, so polling only drops flights that have moved on.
@@ -60,22 +60,30 @@ export default function Board() {
   const [view, setView] = useState<MovementType>('departure');
   const [events, setEvents] = useState<Movement[]>([]);
   const [status, setStatus] = useState<Status>(initialStatus('live'));
-  const [infoOpen, setInfoOpen] = useState(false);
-  const infoRef = useRef<HTMLDivElement>(null);
+  const [popup, setPopup] = useState<'info' | 'mode' | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+  const actionsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!infoOpen) return;
+    const id = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    if (!popup) return;
     const onDown = (e: PointerEvent) => {
-      if (!infoRef.current?.contains(e.target as Node)) setInfoOpen(false);
+      if (!actionsRef.current?.contains(e.target as Node)) setPopup(null);
     };
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setInfoOpen(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setPopup(null); };
     document.addEventListener('pointerdown', onDown);
     document.addEventListener('keydown', onKey);
     return () => {
       document.removeEventListener('pointerdown', onDown);
       document.removeEventListener('keydown', onKey);
     };
-  }, [infoOpen]);
+  }, [popup]);
+
+  const toggle = (p: 'info' | 'mode') => setPopup((cur) => (cur === p ? null : p));
 
   useEffect(() => {
     const sim = mode === 'demo' ? new Simulator() : null;
@@ -130,7 +138,10 @@ export default function Board() {
   };
 
   const dep = view === 'departure';
-  const list = events.filter((e) => e.type === view).slice(0, ROWS);
+  // Demo runs on its own accelerated clock and trims its schedule itself.
+  const list = events
+    .filter((e) => e.type === view && (mode === 'demo' || e.t >= now - CURRENT_WINDOW_MS))
+    .slice(0, ROWS);
 
   return (
     <div className="board">
@@ -143,37 +154,55 @@ export default function Board() {
         <button className="tab" aria-pressed={dep} onClick={() => setView('departure')}>Departures</button>
         <button className="tab" aria-pressed={!dep} onClick={() => setView('arrival')}>Arrivals</button>
 
-        <div className="title-actions">
-          <div className="mode" role="group" aria-label="Data source">
-            <button aria-pressed={mode === 'live'} onClick={() => changeMode('live')}>Live</button>
-            <button aria-pressed={mode === 'demo'} onClick={() => changeMode('demo')}>Demo</button>
-          </div>
-          <div className="info" ref={infoRef}>
+        <div className="title-actions" ref={actionsRef}>
+          <div className="pop">
             <button
-              className={`info-btn ${status.kind}`}
+              className={`icon-btn info-btn ${status.kind}`}
               aria-label="Status and information"
-              aria-expanded={infoOpen}
+              aria-expanded={popup === 'info'}
               aria-controls="info-panel"
-              onClick={() => setInfoOpen((o) => !o)}
+              onClick={() => toggle('info')}
             >
               <span aria-hidden="true">i</span>
               <span className="badge" aria-hidden="true" />
             </button>
-            {infoOpen && (
-              <div id="info-panel" className="info-panel" role="dialog" aria-label="Status and information">
+            {popup === 'info' && (
+              <div id="info-panel" className="popover info-panel" role="dialog" aria-label="Status and information">
                 <div className={`status ${status.kind}`}>
                   <span className="dot" />
                   <span>{status.text}</span>
                 </div>
                 {status.offerDemo && (
-                  <button className="link" onClick={() => { changeMode('demo'); setInfoOpen(false); }}>
+                  <button className="link" onClick={() => { changeMode('demo'); setPopup(null); }}>
                     Try demo
                   </button>
                 )}
                 <p className="note">
-                  Current and upcoming flights from AeroDataBox, soonest first. Times are the latest estimates and
-                  the schedule is refreshed about once an hour.
+                  Flights from the last 10 minutes and upcoming ones from AeroDataBox, soonest first. Times are the
+                  latest estimates and the schedule is refreshed about once an hour.
                 </p>
+              </div>
+            )}
+          </div>
+          <div className="pop">
+            <button
+              className="icon-btn"
+              aria-label="Data source"
+              aria-expanded={popup === 'mode'}
+              aria-controls="mode-menu"
+              onClick={() => toggle('mode')}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="5" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="12" cy="19" r="2" />
+              </svg>
+            </button>
+            {popup === 'mode' && (
+              <div id="mode-menu" className="popover mode-menu" role="group" aria-label="Data source">
+                {(['live', 'demo'] as const).map((m) => (
+                  <button key={m} aria-pressed={mode === m} onClick={() => { changeMode(m); setPopup(null); }}>
+                    {m === 'live' ? 'Live' : 'Demo'}
+                  </button>
+                ))}
               </div>
             )}
           </div>

@@ -37,13 +37,13 @@ button { font: inherit; cursor: pointer; }
 .title {
   background: var(--bar);
   display: flex; flex-wrap: wrap; align-items: center; gap: 1em;
-  padding: .9em 1.2em;
+  padding: .7em 1.2em;
 }
-.icon { width: 2.6em; height: 2.6em; background: var(--yellow); border-radius: .35em; display: grid; place-items: center; flex: none; }
-.icon svg { width: 1.7em; height: 1.7em; }
+.icon { width: 2em; height: 2em; background: var(--yellow); border-radius: .3em; display: grid; place-items: center; flex: none; }
+.icon svg { width: 1.3em; height: 1.3em; }
 .title .tab {
   background: none; border: 0; padding: 0; margin: 0;
-  font: 700 2.2em/1 var(--sans);
+  font: 700 1.5em/1 var(--sans);
   letter-spacing: -.01em;
   color: #6E6E72;
   text-transform: uppercase;
@@ -51,30 +51,21 @@ button { font: inherit; cursor: pointer; }
 .title .tab[aria-pressed="true"] { color: #fff; }
 .title .tab:hover { color: #fff; }
 
-/* Live/Demo switch and info button, right-aligned in the title bar */
+/* Info and data-source buttons, right-aligned in the title bar */
 .title-actions {
   margin-left: auto;
-  display: flex; align-items: center; gap: .8em;
+  display: flex; align-items: center; gap: .6em;
   font: 600 .7em/1 var(--sans);
 }
-.mode { display: flex; border: 1.5px solid #6E6E72; border-radius: .5em; overflow: hidden; }
-.mode button {
-  background: transparent; border: 0; color: #C8C8CC;
-  padding: .55em 1em; min-height: 2.4em;
-  text-transform: uppercase; letter-spacing: .04em;
-}
-.mode button + button { border-left: 1.5px solid #6E6E72; }
-.mode button:hover { color: #fff; }
-.mode button[aria-pressed="true"] { background: var(--yellow); color: #1c1c1e; }
-
-.info { position: relative; }
-.info-btn {
-  position: relative;
-  width: 2.4em; height: 2.4em; border-radius: 50%;
+.pop { position: relative; }
+.icon-btn {
+  position: relative; display: grid; place-items: center;
+  width: 2.4em; height: 2.4em; border-radius: 50%; padding: 0;
   background: transparent; border: 1.5px solid #6E6E72; color: #C8C8CC;
-  font: 700 1em/1 Georgia, serif; font-style: italic;
 }
-.info-btn:hover, .info-btn[aria-expanded="true"] { color: #fff; border-color: #fff; }
+.icon-btn svg { width: 1.3em; height: 1.3em; fill: currentColor; }
+.icon-btn:hover, .icon-btn[aria-expanded="true"] { color: #fff; border-color: #fff; }
+.info-btn { font: italic 700 1em/1 Georgia, serif; }
 .info-btn .badge {
   position: absolute; top: -.1em; right: -.1em;
   width: .7em; height: .7em; border-radius: 50%;
@@ -84,15 +75,23 @@ button { font: inherit; cursor: pointer; }
 .info-btn.warn .badge { background: #C97A12; }
 .info-btn.error .badge { background: #B3261E; }
 
-.info-panel {
+.popover {
   position: absolute; right: 0; top: calc(100% + 10px); z-index: 10;
-  width: min(320px, calc(100vw - 24px));
-  padding: 14px 16px;
   background: #1F1F21; color: #E4E4E8;
   border: 1px solid rgba(255, 255, 255, .1); border-radius: 10px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, .45);
   font: 500 14px/1.45 var(--sans); text-transform: none; letter-spacing: 0;
 }
+.info-panel { width: min(320px, calc(100vw - 24px)); padding: 14px 16px; }
+.mode-menu { min-width: 140px; padding: 6px; display: flex; flex-direction: column; }
+.mode-menu button {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  background: none; border: 0; border-radius: 6px; padding: 9px 10px;
+  color: inherit; text-align: left; font: inherit;
+}
+.mode-menu button:hover { background: rgba(255, 255, 255, .08); }
+.mode-menu button[aria-pressed="true"] { color: var(--yellow); }
+.mode-menu button[aria-pressed="true"]::after { content: "✓"; }
 .status { display: flex; align-items: center; gap: 8px; }
 .status .dot { width: 9px; height: 9px; border-radius: 50%; background: #6E6E72; flex: none; }
 .status.ok .dot { background: #2E8B4F; }
@@ -129,8 +128,8 @@ button { font: inherit; cursor: pointer; }
 @media (max-width: 760px) {
   .board { --tw: .78em; --tg: .06em; font-size: min(26px, calc(100vw / 15)); }
   .icon { display: none; }
-  .title { padding: .55em .8em; gap: .6em 1em; }
-  .title .tab { font-size: 1.05em; padding: .2em 0; }
+  .title { padding: .55em .8em; gap: .6em .7em; }
+  .title .tab { font-size: .8em; padding: .2em 0; }
   .title-actions { font-size: .6em; }
   .head { display: none; }
 

@@ -1,8 +1,7 @@
-import type { Movement, MovementType } from './types';
+import { CURRENT_WINDOW_MS, type Movement, type MovementType } from './types';
 
 export const SIM_STEP_MS = 2000;
 const SIM_DT = 20000;
-const CURRENT_MS = 10 * 60000;
 const HORIZON_MS = 3 * 3600000;
 
 const pick = <T,>(arr: readonly T[]): T => arr[Math.floor(Math.random() * arr.length)];
@@ -32,12 +31,12 @@ function movement(t: number): Movement {
 export class Simulator {
   private clock = Date.now();
   private flights: Movement[] = [];
-  private last = this.clock - CURRENT_MS;
+  private last = this.clock - CURRENT_WINDOW_MS;
 
   /** Current and upcoming flights, soonest first. */
   step(advance = true): Movement[] {
     if (advance) this.clock += SIM_DT;
-    this.flights = this.flights.filter((f) => f.t >= this.clock - CURRENT_MS);
+    this.flights = this.flights.filter((f) => f.t >= this.clock - CURRENT_WINDOW_MS);
     while (this.last < this.clock + HORIZON_MS) {
       this.last += (2 + Math.random() * 6) * 60000;
       this.flights.push(movement(Math.round(this.last / 300000) * 300000));
